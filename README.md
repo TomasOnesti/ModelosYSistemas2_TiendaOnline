@@ -22,7 +22,6 @@ Abrí http://localhost:3000
 
 ## Novedades
 
-- API REST real (Express)
 - Modo claro / oscuro (botón en el navbar)
 - Footer con Términos, Privacidad y Contacto
 - Roles y permisos según diagramas UML
