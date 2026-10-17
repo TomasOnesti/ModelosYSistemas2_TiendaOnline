@@ -1,0 +1,15 @@
+{
+  "name": "tienda-online",
+  "version": "1.0.0",
+  "description": "Tienda Online - API REST + Frontend (casos de uso UML)",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node server/index.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.21.0",
+    "uuid": "^10.0.0"
+  }
+}
