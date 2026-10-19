@@ -1051,8 +1051,13 @@
   ],
   "carritos": {
     "1": {
-      "items": [],
-      "fechaActualizacion": "2026-10-19T16:52:22.703Z"
+      "items": [
+        {
+          "productoId": 2,
+          "cantidad": 3
+        }
+      ],
+      "fechaActualizacion": "2026-10-19T17:20:41.429Z"
     },
     "3": {
       "items": [],
