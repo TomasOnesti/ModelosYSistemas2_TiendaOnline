@@ -12,6 +12,26 @@ router.post("/", authRequired, requirePermiso("REALIZAR_COMPRA"), (req, res) => 
     return res.status(400).json({ error: "El carrito está vacío" });
   }
 
+  // Datos de tarjeta (simulación obligatoria)
+  const { tarjetaNumero, tarjetaTitular, tarjetaVencimiento, tarjetaCvv } = req.body || {};
+  const numeroLimpio = String(tarjetaNumero || "").replace(/\s+/g, "");
+  if (!/^\d{13,19}$/.test(numeroLimpio)) {
+    return res.status(400).json({ error: "Número de tarjeta obligatorio y válido (13 a 19 dígitos)" });
+  }
+  if (!String(tarjetaTitular || "").trim()) {
+    return res.status(400).json({ error: "El titular de la tarjeta es obligatorio" });
+  }
+  if (!/^\d{2}\/\d{2}$/.test(String(tarjetaVencimiento || "").trim())) {
+    return res.status(400).json({ error: "Vencimiento inválido (formato MM/AA)" });
+  }
+  if (!/^\d{3,4}$/.test(String(tarjetaCvv || "").trim())) {
+    return res.status(400).json({ error: "CVV inválido" });
+  }
+  // No guardamos el número completo ni el CVV: solo últimos 4 y titular (simulación segura)
+  const tarjetaUltimos4 = numeroLimpio.slice(-4);
+  const tarjetaTitularSafe = String(tarjetaTitular).trim().slice(0, 80);
+  const tarjetaVencimientoSafe = String(tarjetaVencimiento).trim();
+
   // Validar stock
   for (const item of cart.items) {
     const p = db.products.find((x) => x.id === item.productoId);
@@ -36,7 +56,11 @@ router.post("/", authRequired, requirePermiso("REALIZAR_COMPRA"), (req, res) => 
     fecha: new Date().toISOString(),
     total,
     estado: "CONFIRMADA",
-    detalles
+    detalles,
+    // Pago simulado — no se almacena el PAN completo ni el CVV
+    tarjetaUltimos4,
+    tarjetaTitular: tarjetaTitularSafe,
+    tarjetaVencimiento: tarjetaVencimientoSafe
   };
 
   // Descontar stock + movimientos

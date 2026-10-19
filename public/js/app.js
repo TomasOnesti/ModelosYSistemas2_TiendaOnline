@@ -302,6 +302,21 @@ const App = {
     this.render();
   },
 
+  toggleFormTagChip(label) {
+    const cb = label.querySelector('input[type="checkbox"]');
+    if (!cb) return;
+    // el click del label ya alterna el checkbox; sincronizamos estilo
+    setTimeout(() => {
+      const on = cb.checked;
+      label.className = "tag-chip inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs cursor-pointer select-none transition " +
+        (on
+          ? "bg-primary-600 text-white border-primary-600"
+          : "border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-900");
+      const check = label.querySelector(".tag-check");
+      if (check) check.classList.toggle("hidden", !on);
+    }, 0);
+  },
+
   toggleTag(tagId) {
     const idx = this.filters.tags.indexOf(tagId);
     if (idx >= 0) this.filters.tags.splice(idx, 1);
@@ -325,12 +340,58 @@ const App = {
     } catch (err) { this.toast(err.message, "error"); }
   },
 
-  async checkout() {
+  async openCheckout() {
     try {
-      const compra = await API.createOrder();
-      this.toast(`¡Compra #${compra.id} confirmada! Total: ${Views.formatPrice(compra.total)}`, "success");
-      this.navigate("orders");
+      const cart = await API.getCart();
+      if (!cart || !cart.items || !cart.items.length) {
+        this.toast("El carrito está vacío", "error");
+        return;
+      }
+      document.getElementById("modal-root").innerHTML = Views.paymentModal(cart.total);
+      const form = document.getElementById("form-payment");
+      if (form) {
+        form.onsubmit = async (e) => {
+          e.preventDefault();
+          const fd = new FormData(form);
+          const numero = String(fd.get("tarjetaNumero") || "").replace(/\s+/g, "");
+          const titular = String(fd.get("tarjetaTitular") || "").trim();
+          const vencimiento = String(fd.get("tarjetaVencimiento") || "").trim();
+          const cvv = String(fd.get("tarjetaCvv") || "").trim();
+          if (!/^\d{13,19}$/.test(numero)) {
+            this.toast("Número de tarjeta inválido (13 a 19 dígitos)", "error");
+            return;
+          }
+          if (!titular) {
+            this.toast("Ingresá el titular de la tarjeta", "error");
+            return;
+          }
+          if (!/^\d{2}\/\d{2}$/.test(vencimiento)) {
+            this.toast("Vencimiento inválido (MM/AA)", "error");
+            return;
+          }
+          if (!/^\d{3,4}$/.test(cvv)) {
+            this.toast("CVV inválido", "error");
+            return;
+          }
+          try {
+            const compra = await API.createOrder({
+              tarjetaNumero: numero,
+              tarjetaTitular: titular,
+              tarjetaVencimiento: vencimiento,
+              tarjetaCvv: cvv
+            });
+            this.closeModal();
+            this.toast(`¡Compra #${compra.id} confirmada! Total: ${Views.formatPrice(compra.total)}`, "success");
+            this.navigate("orders");
+          } catch (err) { this.toast(err.message, "error"); }
+        };
+      }
     } catch (err) { this.toast(err.message, "error"); }
+  },
+
+  async checkout() {
+    // compatibilidad: abre el modal de pago
+    return this.openCheckout();
   },
 
   async showProductForm(id = null) {
@@ -347,6 +408,10 @@ const App = {
     const product = (this._cache.products || []).find(p => p.id === id) || await API.getProduct(id);
     document.getElementById("modal-root").innerHTML = Views.restockModal(product);
     this.bindViewEvents();
+  },
+
+  showModal(html) {
+    document.getElementById("modal-root").innerHTML = html;
   },
 
   closeModal() {

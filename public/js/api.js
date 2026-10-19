@@ -59,7 +59,7 @@ const API = {
   removeCartItem(productoId) { return this._req("DELETE", `/cart/items/${productoId}`); },
 
   // Orders
-  createOrder() { return this._req("POST", "/orders"); },
+  createOrder(data) { return this._req("POST", "/orders", data || {}); },
   getOrders() { return this._req("GET", "/orders"); },
 
   // Users

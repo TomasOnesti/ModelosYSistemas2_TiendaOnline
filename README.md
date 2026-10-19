@@ -14,14 +14,15 @@ Abrí http://localhost:3000
 
 ## Cuentas de prueba
 
-| Email | Password | Rol |
-|-------|----------|-----|
-| admin@tienda.com | admin123 | Admin |
-| vendedor@tienda.com | vendedor123 | Vendedor |
-| cliente@tienda.com | cliente123 | Cliente |
+|Email|Password|Rol|
+|-|-|-|
+|admin@tienda.com|admin123|Admin|
+|vendedor@tienda.com|vendedor123|Vendedor|
+|cliente@tienda.com|cliente123|Cliente|
 
 ## Novedades
 
-- Modo claro / oscuro (botón en el navbar)
-- Footer con Términos, Privacidad y Contacto
-- Roles y permisos según diagramas UML
+* Modo claro / oscuro (botón en el navbar)
+* Footer con Términos, Privacidad y Contacto
+* Roles y permisos según diagramas UML
+

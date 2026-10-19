@@ -175,7 +175,7 @@ const Views = {
             <span class="text-slate-900 dark:text-white">Total</span>
             <span class="text-primary-600 dark:text-primary-400">${this.formatPrice(cartData.total)}</span>
           </div>
-          <button onclick="App.checkout()" class="mt-6 w-full bg-primary-600 hover:bg-primary-700 text-white font-medium py-3 rounded-lg">Confirmar compra</button>
+          <button onclick="App.openCheckout()" class="mt-6 w-full bg-primary-600 hover:bg-primary-700 text-white font-medium py-3 rounded-lg">Confirmar compra</button>
         </div>
       </div>`;
   },
@@ -198,6 +198,7 @@ const Views = {
               <span class="text-slate-900 dark:text-white">Total</span>
               <span class="text-primary-600 dark:text-primary-400">${this.formatPrice(c.total)}</span>
             </div>
+            ${c.tarjetaUltimos4 ? `<p class="text-xs text-slate-500 dark:text-slate-400 mt-2">Pago con tarjeta **** **** **** ${c.tarjetaUltimos4}${c.tarjetaTitular ? ` · ${c.tarjetaTitular}` : ""}</p>` : ""}
           </div>
         </div>`).join("")}</div>`}`;
   },
@@ -411,11 +412,60 @@ const Views = {
           <div><label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">URL imagen</label>
             <input type="url" name="imagen" value="${product?.imagen || ""}" class="${this.inputCls}" /></div>
           <div><label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Tags</label>
-            <div class="flex flex-wrap gap-2">${tags.map(t => `<label class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs cursor-pointer ${(product?.tags || []).includes(t.id) ? "bg-primary-50 dark:bg-primary-900/30 border-primary-300 text-primary-700" : "border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300"}">
-              <input type="checkbox" name="tags" value="${t.id}" class="sr-only" ${(product?.tags || []).includes(t.id) ? "checked" : ""} />${t.nombre}</label>`).join("")}</div></div>
+            <div class="flex flex-wrap gap-2">${tags.map(t => {
+              const selected = (product?.tags || []).map(Number).includes(Number(t.id));
+              return `<label class="tag-chip inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs cursor-pointer select-none transition ${selected
+                ? "bg-primary-600 text-white border-primary-600"
+                : "border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-900"}"
+                onclick="App.toggleFormTagChip(this)">
+              <input type="checkbox" name="tags" value="${t.id}" class="sr-only" ${selected ? "checked" : ""} />
+              <span class="tag-check ${selected ? "" : "hidden"}">✓</span>${t.nombre}</label>`;
+            }).join("")}</div>
+            <p class="text-xs text-slate-400 mt-1">Hacé clic para marcar/desmarcar</p></div>
           <div class="flex gap-3 pt-2">
             <button type="button" onclick="App.closeModal()" class="flex-1 px-4 py-2.5 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 text-sm font-medium rounded-lg">Cancelar</button>
             <button type="submit" class="flex-1 px-4 py-2.5 bg-primary-600 text-white text-sm font-medium rounded-lg">${isEdit ? "Guardar" : "Crear"}</button>
+          </div>
+        </form>
+      </div></div>`;
+  },
+
+
+  paymentModal(total) {
+    return `<div class="fixed inset-0 z-[90] flex items-center justify-center p-4 modal-backdrop" onclick="if(event.target===this) App.closeModal()">
+      <div class="${this.cardCls} shadow-xl w-full max-w-md">
+        <div class="px-6 py-4 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center">
+          <h2 class="text-lg font-bold text-slate-900 dark:text-white">Pago con tarjeta</h2>
+          <button onclick="App.closeModal()" class="text-slate-400 text-xl">&times;</button>
+        </div>
+        <form id="form-payment" class="p-6 space-y-4">
+          <p class="text-sm text-slate-500 dark:text-slate-400">Total a pagar: <span class="font-bold text-primary-600 text-lg">${this.formatPrice(total)}</span></p>
+          <div>
+            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Número de tarjeta *</label>
+            <input type="text" name="tarjetaNumero" required inputmode="numeric" autocomplete="cc-number"
+              placeholder="ACCT-000015" maxlength="19"
+              class="${this.inputCls}"
+              oninput="this.value=this.value.replace(/[^0-9 ]/g,'').replace(/(\\d{4})(?=\\d)/g,'$1 ').trim()" />
+            <p class="text-xs text-slate-400 mt-1">Simulación: ingresá 13 a 19 dígitos (no se cobra nada real).</p>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Titular *</label>
+            <input type="text" name="tarjetaTitular" required placeholder="Como figura en la tarjeta" class="${this.inputCls}" />
+          </div>
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Vencimiento *</label>
+              <input type="text" name="tarjetaVencimiento" required placeholder="MM/AA" maxlength="5" class="${this.inputCls}"
+                oninput="this.value=this.value.replace(/[^0-9]/g,'').replace(/^(\\d{2})(\\d)/,'$1/$2').slice(0,5)" />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">CVV *</label>
+              <input type="password" name="tarjetaCvv" required inputmode="numeric" maxlength="4" placeholder="***" class="${this.inputCls}" />
+            </div>
+          </div>
+          <div class="flex gap-3 pt-2">
+            <button type="button" onclick="App.closeModal()" class="flex-1 px-4 py-2.5 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 text-sm font-medium rounded-lg">Cancelar</button>
+            <button type="submit" class="flex-1 px-4 py-2.5 bg-primary-600 text-white text-sm font-medium rounded-lg">Pagar y confirmar</button>
           </div>
         </form>
       </div></div>`;
